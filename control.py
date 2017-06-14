@@ -21,8 +21,25 @@ def sweep(tempo):
         time.sleep(60 / tempo)
 
 
-def blink(tempo):
-    flash(255, 255, 255)
-    time.sleep(10 / tempo)
-    blackout()
-    time.sleep(90 / tempo)
+def blink():
+    start = round(time.time() * 1000)
+    sock.sendto(bytes([0, 0, 0, 254, 0, 0, 0, 0]),
+                ("192.168.1.100", 1811))
+
+    time.sleep(0.2)
+    while 1:
+        dt = round(time.time() * 1000) - start + 200
+        b1 = (dt & 0xff0000) >> 16
+        b2 = (dt & 0x00ff00) >> 8
+        b3 = dt & 0x0000ff
+
+        sock.sendto(bytes([b1, b2, b3, 1, 0, 255, 0, 255]),
+                    ("192.168.1.100", 1811))
+        time.sleep(0.01)
+        dt = round(time.time() * 1000) - start + 200
+        b1 = (dt & 0xff0000) >> 16
+        b2 = (dt & 0x00ff00) >> 8
+        b3 = dt & 0x0000ff
+        sock.sendto(bytes([b1, b2, b3, 0, 255, 0, 255]),
+                    ("192.168.1.100", 1811))
+        time.sleep(0.08)
