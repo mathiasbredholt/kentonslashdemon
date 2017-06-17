@@ -2,52 +2,64 @@ import socket
 import time
 import threading
 
-UDP_PORT = 1812
+# ------ Programs -------
+Blackout = 0
+Flash    = 1
+OneHot   = 2
+Noise    = 3
+
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
 def blink(client):
-    start = round(time.time() * 1000)
-    # client.send(ledcmd(254))
-    sock_udp.sendto(ledcmd(254), (client, UDP_PORT))
+	start = round(time.time() * 1000)
+	client.send(ledcmd(254))
 
-    time.sleep(0.2)
-    while 1:
-        dt = round(time.time() * 1000) - start + 200
-        sock_udp.sendto(
-            ledcmd(0, phase=255, hsv=[0, 0, 255], timestamp=dt), (client, UDP_PORT))
-
-        time.sleep(0.01)
-        dt = round(time.time() * 1000) - start + 200
-        sock_udp.sendto(
-            ledcmd(0, phase=0, hsv=[0, 0, 255], timestamp=dt), (client, UDP_PORT))
-        time.sleep(0.03)
+	time.sleep(0.2)
+	while 1:
+		dt = round(time.time() * 1000) - start + 50
+		client.send(ledcmd(0, timestamp=dt))
+		time.sleep(0.04)
+		dt = round(time.time() * 1000) - start + 50
+		client.send(ledcmd(1, timestamp=dt))
+		time.sleep(0.005)
 
 
 def start():
-    sock.bind(("192.168.1.50", 1811))
-    sock.listen(1)
+	sock.bind(("192.168.1.51", 1811))
+	sock.listen(1)
 
-    (client, address) = sock.accept()
-    print(address, " is connected.")
-    return address[0]
+	(client, address) = sock.accept()
+	return client
 
 
 def blink2(client):
-    client.send(ledcmd(0))
-    time.sleep(0.25)
-    client.send(ledcmd(1))
-    time.sleep(0.25)
+	client.send(ledcmd(0))
+	time.sleep(0.25)
+	client.send(ledcmd(1))
+	time.sleep(0.25)
+
+
+def sweep(client):
+	start = round(time.time() * 1000)
+	client.send(ledcmd(254))
+
+	time.sleep(0.2)
+	while 1:
+		for i in  range(0,15):
+			dt = round(time.time() * 1000) - start + 50
+			client.send(ledcmd(OneHot, i, dt,[0,0,100]))
+			time.sleep(0.1)
+
 
 
 def ledcmd(program=0, phase=0, timestamp=0, hsv=[0, 0, 20]):
-    b1 = (timestamp & 0xff0000) >> 16
-    b2 = (timestamp & 0x00ff00) >> 8
-    b3 = timestamp & 0x0000ff
-    return bytes([b1, b2, b3, program, phase, hsv[0], hsv[1], hsv[2]])
+	b1 = (timestamp & 0xff0000) >> 16
+	b2 = (timestamp & 0x00ff00) >> 8
+	b3 = timestamp & 0x0000ff
+	return bytes([b1, b2, b3, program, phase, hsv[0], hsv[1], hsv[2]])
 
 # sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
